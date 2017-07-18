@@ -15,7 +15,7 @@
 			"name":"Lotfi Messaoudi",
 			"homepage":"http://www.lotfi.messaoudi.me/",
 			"role":"Developer"
-		},
+		}
 	],
 	"support":{
 		"issues":"https://github.com/volkovmqx/contao-simple-event-registration/issues",

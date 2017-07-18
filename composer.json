@@ -1,20 +1,25 @@
 {
-	"name":"felixpfeiffer/contao-simple-event-registration",
-	"description":"A simple way to let contao memebers register for an event.",
+	"name":"volkovmqx/contao-simple-event-registration",
+	"description":"A simple way to let anonymous users register for an event.",
 	"keywords":["event","registration","waitinglist"],
 	"type":"contao-module",
-	"homepage":"http://www.felixpfeiffer.com/",
+	"homepage":"http://www.lotfi.messaoudi.me/",
 	"license":"LGPL-3.0+",
 	"authors":[
 		{
 			"name":"Felix Pfeiffer",
 			"homepage":"http://www.felixpfeiffer.com/",
 			"role":"Developer"
-		}
+		},
+        {
+			"name":"Lotfi Messaoudi",
+			"homepage":"http://www.lotfi.messaoudi.me/",
+			"role":"Developer"
+		},
 	],
 	"support":{
-		"issues":"https://github.com/felixpfeiffer/contao-simple-event-registration/issues",
-		"source":"https://github.com/felixpfeiffer/contao-simple-event-registration"
+		"issues":"https://github.com/volkovmqx/contao-simple-event-registration/issues",
+		"source":"https://github.com/volkovmqx/contao-simple-event-registration"
 	},
 	"require":{
 		"php":">=5.3",
@@ -25,7 +30,8 @@
 		"classmap":[""]
 	},
 	"replace":{
-		"contao-legacy/simple_event_registration":"*"
+		"contao-legacy/simple_event_registration":"*",
+        "felixpfeiffer/simple_event_registration":"*"
 	},
 	"extra":{
 		"contao":{

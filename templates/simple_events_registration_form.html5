@@ -1,11 +1,10 @@
-
 <div class="ser_wrapper">
-
+<?php if($this->blnShowForm) : ?>
+	<strong>Sie möchten an dieser Veranstaltung teilnehmen? </strong>
 	<p class="info_places<?php echo $this->places_class ?>"><?php echo $this->places; ?></p>
-	
+
 	<?php if($this->message): foreach($this->message as $message): ?><p class="message<?php echo $message['message_class']; ?>"><?php echo $message['message']; ?></p><?php endforeach;endif; ?>
-	
-	<?php if($this->blnShowForm): ?>
+
 	<form action="<?php echo $this->action; ?>" method="post">
 		<div class="formbody">
 			<input type="hidden" name="FORM_SUBMIT" value="tl_simple_event_registration" />
@@ -15,7 +14,7 @@
 			</div>
 			<?php if($this->ser_quantity): ?>
 			<div class="select_container">
-				<label for="ctrl_quantity"><?php echo $this->quantity_label; ?></label> 
+				<label for="ctrl_quantity"><?php echo $this->quantity_label; ?></label>
 				<select name="quantity_select" id="ctrl_quantity" class="select">
 					<?php for($i=1;$i<=$this->quantity;$i++): ?>
 					<option value="<?php echo $i; ?>"><?php echo $i; ?></option>
@@ -23,24 +22,21 @@
 				</select>
 			</div>
 			<?php endif; ?>
+
+			<label for="user" style="width: 100%;">Vorname</label><br />
+			<input type="text" name="vorname" id="firstname" />
+
+			<label for="user">Nachname</label><br />
+			<input type="text" name="nachname" id="lastname" />
+
+			<label for="user">E-mail</label><br />
+			<input type="text" name="email" id="email" /><br />
 			<div class="submit_container">
 				<input type="submit" class="submit" value="<?php echo $this->submit; ?>" />
 			</div>
 		</div>
 	</form>
-	<?php endif; ?>
-	<?php if($this->blnShowDiscardForm): ?>
-	<form action="<?php echo $this->action; ?>" method="post">
-		<div class="formbody">
-			<input type="hidden" name="FORM_SUBMIT" value="tl_simple_event_cancelation" />
-			<input type="hidden" name="REQUEST_TOKEN" value="{{request_token}}">
-			<div class="checkbox_container">
-				<span><input type="checkbox" name="unregister" id="opt_unregister" class="checkbox" value="1" /> <label for="opt_unregister"><?php echo $this->unregister_checkbox_label; ?></label></span>
-			</div>
-			<div class="submit_container">
-				<input type="submit" class="submit" value="<?php echo $this->unsubmit; ?>" />
-			</div>
-		</div>
-	</form>
-	<?php endif; ?>
+<?php else: ?>
+	<strong>Vielen Dank das Sie sich für dieses Event angemeldet haben</strong>
+<?php endif; ?>
 </div>

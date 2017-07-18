@@ -8,27 +8,27 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation, either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this program. If not, please visit the Free
  * Software Foundation website at http://www.gnu.org/licenses/.
  *
  * PHP version 5
  * @copyright  2010 - 2014 Felix Pfeiffer : Neue Medien
- * @author     Felix Pfeiffer 
- * @package    simple_event_registration 
- * @license    LGPL 
+ * @author     Felix Pfeiffer
+ * @package    simple_event_registration
+ * @license    LGPL
  * @filesource
  */
 
 
 /**
- * Table tl_event_registrations 
+ * Table tl_event_registrations
  */
 $GLOBALS['TL_DCA']['tl_event_registrations'] = array
 (
@@ -198,13 +198,13 @@ $GLOBALS['TL_DCA']['tl_event_registrations'] = array
 
 class tl_event_registrations extends Backend
 {
-	
+
 	public function checkClosed(DataContainer $dc)
 	{
 		$id= $this->Input->get('act') == 'create' ? $this->Input->get('pid') : $dc->id;
-		
+
 		$places = $this->checkPlaces($id);
-		
+
 		if($places)
 		{
 			$GLOBALS['TL_DCA']['tl_event_registrations']['config']['closed'] = false;
@@ -216,19 +216,19 @@ class tl_event_registrations extends Backend
 				'attributes'          => 'onclick="Backend.getScrollOffset();"'
 			);
 		}
-		
+
 	}
-	
-	
+
+
 	public function saveName(DataContainer $dc)
 	{
 		$id= $dc->id;
-		
+
 		$objUser = $this->Database->prepare("UPDATE tl_event_registrations %s WHERE id=?")->set(array('anonym'=>1))->execute($id);
-		
+
 	}
-	
-	
+
+
 	/**
 	 * Show Entrys
 	 * @param array
@@ -236,7 +236,7 @@ class tl_event_registrations extends Backend
 	 */
 	public function showItems($arrRow)
 	{
-		if($arrRow['anonym'] == 1)
+		if($arrRow['anonym'] != 1)
 		{
 			$strName = 'Anonyme Anmeldung';
 			if($arrRow['lastname'] != '')
@@ -245,7 +245,7 @@ class tl_event_registrations extends Backend
 			}
 			return '<p style="">' . $arrRow['quantity'] . ' - ' .$strName.', ' . \Date::parse($GLOBALS['TL_CONFIG']['datimFormat'],$arrRow['tstamp']) . '</p> '."\n";
 		}
-		
+
 		$objUser = $this->Database->prepare("SELECT * FROM tl_member WHERE ID=?")->execute($arrRow['userId']);
 
         $strClass = '';
@@ -253,16 +253,16 @@ class tl_event_registrations extends Backend
         {
             $strClass="wtlist";
         }
-		
+
 		return '
 <p class="'.$strClass.'">' . $arrRow['quantity'] . ' - ' . $objUser->firstname . ' ' . $objUser->lastname . ', <a href="contao/main.php?do=member&act=edit&id='.$objUser->id.'">' . $objUser->username . '</a>, ' . \Date::parse($GLOBALS['TL_CONFIG']['datimFormat'],$arrRow['tstamp']) . '</p>' . "\n";
-		
+
 	}
-	
+
 	/* Anonymen User registrieren */
 	public function anonymregister()
 	{
-		
+
 		if ($this->Input->get('key') != 'anonymregister')
 		{
 			return '';
@@ -270,17 +270,17 @@ class tl_event_registrations extends Backend
 		$message = false;
 		$number=1;
 		$places = $this->checkPlaces();
-		
+
 		if(!$places) $message = sprintf('<p class="tl_error">%s</p>%s', $GLOBALS['TL_LANG']['MSC']['ser_no_places'], "\n");
-		
+
 		// Import
 		if ($this->Input->post('FORM_SUBMIT') == 'tl_event_registrations_anonymregister' && $this->Input->post('number') != 0)
 		{
-		
+
 			$pid=$this->Input->get('id');
 			$number = $this->Input->post('number');
-			
-			if($number > $places) 
+
+			if($number > $places)
 			{
 				$message = sprintf('<p class="tl_error">%s</p>%s', sprintf($GLOBALS['TL_LANG']['MSC']['ser_to_much_places'],$places), "\n");
 				$number=$places;
@@ -294,17 +294,17 @@ class tl_event_registrations extends Backend
 						'tstamp'=>time(),
 						'anonym'=>1
 					);
-					
+
 					$this->Database->prepare("INSERT INTO tl_event_registrations %s")->set($arrData)->execute()->query;
 				}
 
 				$message = sprintf('<p class="tl_message">%s</p>%s', sprintf($GLOBALS['TL_LANG']['MSC']['ser_anonym_set'],$number), "\n");
-				
+
 				$number=1;
 			}
-		
+
 		}
-		
+
 		$places = $this->checkPlaces();
 		// Return form
 		$return = '
@@ -357,9 +357,9 @@ return $return;
 
 		if($objPlaces->numRows && $objPlaces->reg_places<$objEvent->ser_places) return $objEvent->ser_places - $objPlaces->reg_places;
 		else return false;
-		
+
 	}
-	
+
 	/**
 	 * Return a form to choose a CSV file and import it
 	 * @param object
@@ -367,30 +367,29 @@ return $return;
 	 */
 	public function exportRegisteredUsers(DataContainer $dc)
 	{
+
 		$strRedirectUrl = ampersand(str_replace('&key=serexport', '', $this->Environment->request));
 		if ($this->Input->get('key') != 'serexport')
 		{
 			$this->redirect($strRedirectUrl);
 		}
-		
+
 		$pid=$this->Input->get('id');
-		
-		$objUsers = $this->Database->prepare("SELECT * FROM tl_event_registrations WHERE pid=? AND ( userId!=0 OR (anonym=1 AND lastname != ''))")
+
+		$objUsers = $this->Database->prepare("SELECT * FROM tl_event_registrations WHERE pid=? AND ( userId!=0 OR (anonym !=1 AND lastname != ''))")
 								   ->execute($pid);
-		
+
 		if($objUsers->numRows == 0) $this->redirect($strRedirectUrl);
-		
+
 		$fields = $GLOBALS['BE_MOD']['content']['calendar']['serexportfields'];
-		
+
 		$strUserfields = implode(',',$fields['user']);
-		
 		// get records
-		$arrExport = array();		
-		
+		$arrExport = array();
+
 		$objEventRow = $this->Database->prepare("SELECT *, (SELECT jumpTo FROM tl_calendar WHERE tl_calendar.id=tl_calendar_events.pid) AS jumpTo, (SELECT id FROM tl_page WHERE tl_page.id=jumpTo) AS pageId, (SELECT alias FROM tl_page WHERE tl_page.id=jumpTo) AS pageAlias FROM tl_calendar_events WHERE id=?")
 					                  ->execute($pid);
-		
-		$span = Calendar::calculateSpan($objEventRow->startTime, $objEventRow->endTime);
+		$span = \Calendar::calculateSpan($objEventRow->startTime, $objEventRow->endTime);
 
 		// Get date
 		if ($span > 0)
@@ -405,19 +404,19 @@ return $return;
 		{
 			$objEventRow->date = \Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $objEventRow->startTime) . ($objEventRow->addTime ? ' (' . \Date::parse($GLOBALS['TL_CONFIG']['timeFormat'], $objEventRow->startTime) . ' - ' . \Date::parse($GLOBALS['TL_CONFIG']['timeFormat'], $objEventRow->endTime) . ')' : '');
 		}
-		
+
 		$objEventRow->url = $this->generateEventUrl($objEventRow,$this->generateFrontendUrl(array('id'=>$objEventRow->pageId,'alias'=>$objEventRow->pageAlias), 'events/%s'));
-		
+
 		$arrEvents = array();
 		foreach($fields['event'] as $value)
 		{
 			$arrEvents[] = $objEventRow->$value;
 		}
-		
-		
+
+
 		while($objUsers->next())
 		{
-			if($objUsers->anonym == 0)
+			if($objUsers->anonym != 0)
 			{
 				$objUserRow = $this->Database->prepare("SELECT ".$strUserfields." FROM tl_member WHERE id=?")
 							->execute($objUsers->userId);
@@ -430,10 +429,10 @@ return $return;
 					$arrValues[$v] = $objUsers->$v;
 				}
 			}
-			
-			$arrExport[] = array_merge($arrValues,$arrEvents);	
+
+			$arrExport[] = array_merge($arrValues,$arrEvents);
 		}
-		
+
 		$fieldlabels = array();
 		$this->loadLanguageFile('tl_member');
 		$this->loadLanguageFile('tl_calendar_events');
@@ -445,11 +444,11 @@ return $return;
 		{
 			$fieldlabels[] = $GLOBALS['TL_LANG']['tl_calendar_events'][$value][0] != "" ? $GLOBALS['TL_LANG']['tl_calendar_events'][$value][0] : $value;
 		}
-		
-		
+
+
 		// start output
 		$exportFile =  'simple_event_register_' . date("Ymd-Hi");
-		
+
 		header('Content-Type: application/csv');
 		header('Content-Transfer-Encoding: binary');
 		header('Content-Disposition: attachment; filename="' . $exportFile .'.csv"');
@@ -460,11 +459,11 @@ return $return;
 		$output = '';
 		$output .= html_entity_decode(utf8_decode('"' . join('";"', $fieldlabels).'"' . "\n"));
 
-		
-		
-		foreach ($arrExport as $export) 
+
+
+		foreach ($arrExport as $export)
 		{
-			$export['gender'] = $GLOBALS['TL_LANG']['MSC'][$export['gender']];			
+			$export['gender'] = $GLOBALS['TL_LANG']['MSC'][$export['gender']];
 			$output .= html_entity_decode(utf8_decode('"' . join('";"', $export).'"' . "\n"));
 		}
 
@@ -472,7 +471,7 @@ return $return;
 		exit;
 
 	}
-	
+
 	/**
 	 * Generate a URL and return it as string
 	 * @param object
@@ -515,8 +514,8 @@ return $return;
 
 		return '';
 	}
-	
-	
+
+
 	public function listPlaces()
 	{
 		$pid=$this->Input->get('pid');
@@ -526,9 +525,9 @@ return $return;
 		{
 			$arrReturn[$i] = $i;
 		}
-		
+
 		return $arrReturn;
-		
+
 	}
 
     /**

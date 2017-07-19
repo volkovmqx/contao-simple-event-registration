@@ -35,7 +35,8 @@ class ModuleSimpleEventRegistration extends \ModuleEventReader
      **/
     protected $blnParseRegistration = true;
     protected $blnShowList = true;
-
+    protected $sitekey = 'XXXX';
+    protected $secretkey = 'XXXX';
     /**
      * Display a wildcard in the back end
      * @return string
@@ -62,9 +63,8 @@ class ModuleSimpleEventRegistration extends \ModuleEventReader
      */
     protected function compile()
     {
+
         parent::compile();
-
-
 
         // Get current event
         $objEvent = \CalendarEventsModel::findPublishedByParentAndIdOrAlias(\Input::get('events'), $this->cal_calendar);
@@ -178,6 +178,12 @@ class ModuleSimpleEventRegistration extends \ModuleEventReader
     {
         $objTemplate = new \FrontendTemplate('simple_events_registration_form');
         $objTemplate->blnShowForm = true;
+        // ReCaptcha
+        $GLOBALS['TL_HEAD'][] = "<script src='https://www.google.com/recaptcha/api.js?hl=de'></script>";
+
+        $objTemplate->sitekey = $this->sitekey;
+        $objTemplate->secretkey = $this->secretkey;
+
 
         $isregistered = false;
 
@@ -259,6 +265,10 @@ class ModuleSimpleEventRegistration extends \ModuleEventReader
             $arrMessage[] = $arrMess;
             $_SESSION['TL_SER_UNREGISTERED'] = false;
         }
+        if ($_SESSION['TL_SER_ERRORCAPTCHA']) {
+          $objTemplate->errorCaptcha = true;
+          $_SESSION['TL_SER_ERRORCAPTCHA'] = false;
+        }
 
 
         // Build the form
@@ -300,68 +310,84 @@ class ModuleSimpleEventRegistration extends \ModuleEventReader
     protected function registerUser($objEvent)
     {
 
-        //print_r($_POST);
+        $curl = curl_init();
 
-        //die();
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => "https://www.google.com/recaptcha/api/siteverify",
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => "",
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 30,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => "POST",
+          CURLOPT_POSTFIELDS => "secret=".$this->secretkey."&response=".$_POST['g-recaptcha-response'],
+          CURLOPT_HTTPHEADER => array(
+            "cache-control: no-cache",
+            "content-type: application/x-www-form-urlencoded"
+          ),
+        ));
 
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
 
-        $arrSet = array(
-            'pid'        => $objEvent->id,
-            'tstamp'    => time(),
-            'firstname' => $_POST['vorname'],
-            'lastname'    => $_POST['nachname'],
-            'email'        => $_POST['email'],
-            'anonym'    => 0
-        );
-        $intQuantity = $this->Input->post('quantity_select') ? $this->Input->post('quantity_select') : 1;
-        if ($this->ser_quantity) {
-            $arrSet['quantity'] = $intQuantity;
+        curl_close($curl);
+        if(!json_decode($response,true)['success']) {
+          $objTemplate = new \FrontendTemplate('simple_events_registration_form');
+          $_SESSION['TL_SER_ERRORCAPTCHA'] = true;
+          $this->reload();
         }
+        else {
+          $arrSet = array(
+              'pid'        => $objEvent->id,
+              'tstamp'    => time(),
+              'firstname' => $_POST['vorname'],
+              'lastname'    => $_POST['nachname'],
+              'email'        => $_POST['email'],
+              'anonym'    => 0
+          );
+          $intQuantity = $this->Input->post('quantity_select') ? $this->Input->post('quantity_select') : 1;
+          if ($this->ser_quantity) {
+              $arrSet['quantity'] = $intQuantity;
+          }
 
-        $this->Database->prepare("INSERT INTO tl_event_registrations %s")->set($arrSet)->execute();
+          $this->Database->prepare("INSERT INTO tl_event_registrations %s")->set($arrSet)->execute();
 
 
 
-        // Send notification
-        $intPlaces = $this->checkPlaces($objEvent->id, $objEvent->ser_places);
-        $strSql = $intPlaces ? "SELECT ser_confirm_subject AS subject, ser_confirm_text AS text, ser_confirm_html AS html FROM tl_calendar WHERE id=?" : "SELECT ser_wait_subject AS subject, ser_wait_text AS text, ser_wait_html AS html FROM tl_calendar WHERE id=?";
-        $objMailText = \Database::getInstance()->prepare($strSql)->execute($objEvent->pid);
-        $objEmail = new \Email();
-        $strFrom = $GLOBALS['TL_CONFIG']['adminEmail'];
-        $strNotify = $objEvent->ser_email != "" ? $objEvent->ser_email : $GLOBALS['TL_CONFIG']['adminEmail'];
+          // Send notification
+          $intPlaces = $this->checkPlaces($objEvent->id, $objEvent->ser_places);
+          $strSql = $intPlaces ? "SELECT ser_confirm_subject AS subject, ser_confirm_text AS text, ser_confirm_html AS html FROM tl_calendar WHERE id=?" : "SELECT ser_wait_subject AS subject, ser_wait_text AS text, ser_wait_html AS html FROM tl_calendar WHERE id=?";
+          $objMailText = \Database::getInstance()->prepare($strSql)->execute($objEvent->pid);
+          $objEmail = new \Email();
+          $strFrom = $GLOBALS['TL_CONFIG']['adminEmail'];
+          $strNotify = $objEvent->ser_email != "" ? $objEvent->ser_email : $GLOBALS['TL_CONFIG']['adminEmail'];
 
-        $span = \Calendar::calculateSpan($objEvent->startTime, $objEvent->endTime);
+          $span = \Calendar::calculateSpan($objEvent->startTime, $objEvent->endTime);
 
-        // Get date
-        if ($span > 0) {
-            $objEvent->date = \Date::parse($GLOBALS['TL_CONFIG'][($objEvent->addTime ? 'datimFormat' : 'dateFormat')], $objEvent->startTime) . ' - ' . \Date::parse($GLOBALS['TL_CONFIG'][($objEvent->addTime ? 'datimFormat' : 'dateFormat')], $objEvent->endTime);
-        } elseif ($objEvent->startTime == $objEvent->endTime) {
-            $objEvent->date = \Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $objEvent->startTime) . ($objEvent->addTime ? ' (' . \Date::parse($GLOBALS['TL_CONFIG']['timeFormat'], $objEvent->startTime) . ')' : '');
-        } else {
-            $objEvent->date = \Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $objEvent->startTime) . ($objEvent->addTime ? ' (' . \Date::parse($GLOBALS['TL_CONFIG']['timeFormat'], $objEvent->startTime) . ' - ' . \Date::parse($GLOBALS['TL_CONFIG']['timeFormat'], $objEvent->endTime) . ')' : '');
-        }
+          // Get date
+          if ($span > 0) {
+              $objEvent->date = \Date::parse($GLOBALS['TL_CONFIG'][($objEvent->addTime ? 'datimFormat' : 'dateFormat')], $objEvent->startTime) . ' - ' . \Date::parse($GLOBALS['TL_CONFIG'][($objEvent->addTime ? 'datimFormat' : 'dateFormat')], $objEvent->endTime);
+          } elseif ($objEvent->startTime == $objEvent->endTime) {
+              $objEvent->date = \Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $objEvent->startTime) . ($objEvent->addTime ? ' (' . \Date::parse($GLOBALS['TL_CONFIG']['timeFormat'], $objEvent->startTime) . ')' : '');
+          } else {
+              $objEvent->date = \Date::parse($GLOBALS['TL_CONFIG']['dateFormat'], $objEvent->startTime) . ($objEvent->addTime ? ' (' . \Date::parse($GLOBALS['TL_CONFIG']['timeFormat'], $objEvent->startTime) . ' - ' . \Date::parse($GLOBALS['TL_CONFIG']['timeFormat'], $objEvent->endTime) . ')' : '');
+          }
 
-        $notifyText = $intPlaces ? $GLOBALS['TL_LANG']['MSC']['ser_notify_mail'] : $GLOBALS['TL_LANG']['MSC']['ser_waitinglist_mail'];
-        $notifySubject = $intPlaces ? $GLOBALS['TL_LANG']['MSC']['ser_register_subject'] : $GLOBALS['TL_LANG']['MSC']['ser_waitinglist_subject'];
+          $notifyText = $intPlaces ? $GLOBALS['TL_LANG']['MSC']['ser_notify_mail'] : $GLOBALS['TL_LANG']['MSC']['ser_waitinglist_mail'];
+          $notifySubject = $intPlaces ? $GLOBALS['TL_LANG']['MSC']['ser_register_subject'] : $GLOBALS['TL_LANG']['MSC']['ser_waitinglist_subject'];
 
-        $messageText = $this->replaceInserts($objEvent, html_entity_decode($objMailText->text), $intQuantity);
-        $messageHTML = $this->replaceInserts($objEvent, html_entity_decode($objMailText->html), $intQuantity);
-        $notifyText = $this->replaceInserts($objEvent, $notifyText, $intQuantity);
-
-        $objEmail->from = $strFrom;
-        $objEmail->subject = $this->replaceInserts($objEvent, html_entity_decode($objMailText->subject), $intQuantity);
-
-        $objEmail->text = $messageText;
-        $objEmail->html = $messageHTML;
-        $objEmail->sendTo($_POST['email']);
-
-        $objEmail->subject = $this->replaceInserts($objEvent, html_entity_decode($notifySubject), $intQuantity);
-        $objEmail->text = $notifyText;
-        $objEmail->html = nl2br($notifyText);
-        $objEmail->sendTo($strNotify);
-
-        $_SESSION['TL_SER_REGISTERED'] = true;
-        $this->reload();
+          $messageText = $this->replaceInserts($objEvent, html_entity_decode($objMailText->text), $intQuantity);
+          $messageHTML = $this->replaceInserts($objEvent, html_entity_decode($objMailText->html), $intQuantity);
+          $notifyText = $this->replaceInserts($objEvent, $notifyText, $intQuantity);
+          $objEmail->from = $strFrom;
+          $objEmail->subject = $this->replaceInserts($objEvent, html_entity_decode($objMailText->subject), $intQuantity);
+          $objEmail->text = $messageText;
+          $objEmail->html = $messageHTML;
+          $objEmail->sendTo($_POST['email']);
+          $objEmail->sendTo($strNotify);
+          $_SESSION['TL_SER_REGISTERED'] = true;
+          $this->reload();
+      }
     }
 
     protected function unregisterUser($objEvent)

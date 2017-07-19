@@ -1,4 +1,7 @@
 <div class="ser_wrapper">
+<?php if($this->errorCaptcha): ?>
+	<strong style="color:red;">Bitte bestätigen Sie den Verifizierungscode</strong><br>
+<?php endif; ?>
 <?php if($this->blnShowForm) : ?>
 	<strong>Sie möchten an dieser Veranstaltung teilnehmen? </strong>
 	<p class="info_places<?php echo $this->places_class ?>"><?php echo $this->places; ?></p>
@@ -10,7 +13,7 @@
 			<input type="hidden" name="FORM_SUBMIT" value="tl_simple_event_registration" />
 			<input type="hidden" name="REQUEST_TOKEN" value="{{request_token}}">
 			<div class="checkbox_container">
-				<span><input type="checkbox" name="register" id="opt_register" class="checkbox" value="1" /> <label for="opt_register"><?php echo $this->checkbox_label; ?></label></span>
+				<span><input type="checkbox" name="register" id="opt_register" class="checkbox" value="1" required="required" /> <label for="opt_register"><?php echo $this->checkbox_label; ?></label></span>
 			</div>
 			<?php if($this->ser_quantity): ?>
 			<div class="select_container">
@@ -24,14 +27,15 @@
 			<?php endif; ?>
 
 			<label for="user" style="width: 100%;">Vorname</label><br />
-			<input type="text" name="vorname" id="firstname" />
+			<input type="text" name="vorname" id="firstname" required="required" />
 
 			<label for="user">Nachname</label><br />
-			<input type="text" name="nachname" id="lastname" />
+			<input type="text" name="nachname" id="lastname" required="required" />
 
 			<label for="user">E-mail</label><br />
-			<input type="text" name="email" id="email" /><br />
-			<div class="submit_container">
+			<input type="text" name="email" id="email" required="required" /><br />
+			<div class="g-recaptcha" data-sitekey="<?php echo $this->sitekey; ?>"></div>
+			<div class="submit_container" style="margin-top: 30px;">
 				<input type="submit" class="submit" value="<?php echo $this->submit; ?>" />
 			</div>
 		</div>

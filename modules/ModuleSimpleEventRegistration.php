@@ -35,8 +35,6 @@ class ModuleSimpleEventRegistration extends \ModuleEventReader
      **/
     protected $blnParseRegistration = true;
     protected $blnShowList = true;
-    protected $sitekey = $GLOBALS['TL_CONFIG']['ERMSiteKey'];
-    protected $secretkey = $GLOBALS['TL_CONFIG']['ERMSecretKey'];
     /**
      * Display a wildcard in the back end
      * @return string
@@ -181,8 +179,8 @@ class ModuleSimpleEventRegistration extends \ModuleEventReader
         // ReCaptcha
         $GLOBALS['TL_HEAD'][] = "<script src='https://www.google.com/recaptcha/api.js?hl=de'></script>";
 
-        $objTemplate->sitekey = $this->sitekey;
-        $objTemplate->secretkey = $this->secretkey;
+        $objTemplate->sitekey = $GLOBALS['TL_CONFIG']['ERMSiteKey'];
+        $objTemplate->secretkey = $GLOBALS['TL_CONFIG']['ERMSecretKey'];
 
 
         $isregistered = false;

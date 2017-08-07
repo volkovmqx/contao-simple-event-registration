@@ -35,8 +35,8 @@ class ModuleSimpleEventRegistration extends \ModuleEventReader
      **/
     protected $blnParseRegistration = true;
     protected $blnShowList = true;
-    protected $sitekey = 'XXXX';
-    protected $secretkey = 'XXXX';
+    protected $sitekey = $GLOBALS['TL_CONFIG']['ERMSiteKey'];
+    protected $secretkey = $GLOBALS['TL_CONFIG']['ERMSecretKey'];
     /**
      * Display a wildcard in the back end
      * @return string

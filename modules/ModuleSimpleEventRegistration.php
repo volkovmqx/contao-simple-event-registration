@@ -318,7 +318,7 @@ class ModuleSimpleEventRegistration extends \ModuleEventReader
           CURLOPT_TIMEOUT => 30,
           CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
           CURLOPT_CUSTOMREQUEST => "POST",
-          CURLOPT_POSTFIELDS => "secret=".$this->secretkey."&response=".$_POST['g-recaptcha-response'],
+          CURLOPT_POSTFIELDS => "secret=".$GLOBALS['TL_CONFIG']['ERMSecretKey']."&response=".$_POST['g-recaptcha-response'],
           CURLOPT_HTTPHEADER => array(
             "cache-control: no-cache",
             "content-type: application/x-www-form-urlencoded"
@@ -327,7 +327,6 @@ class ModuleSimpleEventRegistration extends \ModuleEventReader
 
         $response = curl_exec($curl);
         $err = curl_error($curl);
-
         curl_close($curl);
         if(!json_decode($response,true)['success']) {
           $objTemplate = new \FrontendTemplate('simple_events_registration_form');
